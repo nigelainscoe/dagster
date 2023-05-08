@@ -84,6 +84,7 @@ class SourceAsset(ResourceAddable):
     resource_defs: PublicAttr[Dict[str, ResourceDefinition]]
     observe_fn: PublicAttr[Optional[SourceAssetObserveFunction]]
     _node_def: Optional[OpDefinition]  # computed lazily
+    auto_observe_frequency_minutes: Optional[float]
 
     def __init__(
         self,
@@ -96,6 +97,8 @@ class SourceAsset(ResourceAddable):
         group_name: Optional[str] = None,
         resource_defs: Optional[Mapping[str, object]] = None,
         observe_fn: Optional[SourceAssetObserveFunction] = None,
+        *,
+        auto_observe_frequency_minutes: Optional[float] = None,
         # This is currently private because it is necessary for source asset observation functions,
         # but we have not yet decided on a final API for associated one or more ops with a source
         # asset. If we were to make this public, then we would have a canonical public
@@ -153,6 +156,9 @@ class SourceAsset(ResourceAddable):
             _required_resource_keys, "_required_resource_keys", of_type=str
         )
         self._node_def = None
+        self.auto_observe_frequency_minutes = check.opt_numeric_param(
+            auto_observe_frequency_minutes, "auto_observe_frequency_minutes"
+        )
 
     def get_io_manager_key(self) -> str:
         return self.io_manager_key or DEFAULT_IO_MANAGER_KEY
@@ -282,6 +288,7 @@ class SourceAsset(ResourceAddable):
                 resource_defs=relevant_resource_defs,
                 group_name=self.group_name,
                 observe_fn=self.observe_fn,
+                auto_observe_frequency_minutes=self.auto_observe_frequency_minutes,
                 _required_resource_keys=self._required_resource_keys,
             )
 
@@ -307,6 +314,7 @@ class SourceAsset(ResourceAddable):
                 group_name=group_name,
                 resource_defs=self.resource_defs,
                 observe_fn=self.observe_fn,
+                auto_observe_frequency_minutes=self.auto_observe_frequency_minutes,
                 _required_resource_keys=self._required_resource_keys,
             )
 

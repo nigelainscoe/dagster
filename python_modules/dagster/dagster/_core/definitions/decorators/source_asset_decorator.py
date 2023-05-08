@@ -29,6 +29,7 @@ def observable_source_asset(
     group_name: Optional[str] = None,
     required_resource_keys: Optional[AbstractSet[str]] = None,
     resource_defs: Optional[Mapping[str, ResourceDefinition]] = None,
+    auto_observe_frequency_minutes: Optional[float] = None,
 ) -> "_ObservableSourceAsset":
     ...
 
@@ -46,6 +47,7 @@ def observable_source_asset(
     group_name: Optional[str] = None,
     required_resource_keys: Optional[AbstractSet[str]] = None,
     resource_defs: Optional[Mapping[str, ResourceDefinition]] = None,
+    auto_observe_frequency_minutes: Optional[float] = None,
 ) -> Union[SourceAsset, "_ObservableSourceAsset"]:
     """Create a `SourceAsset` with an associated observation function.
 
@@ -89,6 +91,7 @@ def observable_source_asset(
         group_name,
         required_resource_keys,
         resource_defs,
+        auto_observe_frequency_minutes,
     )
 
 
@@ -104,6 +107,7 @@ class _ObservableSourceAsset:
         group_name: Optional[str] = None,
         required_resource_keys: Optional[AbstractSet[str]] = None,
         resource_defs: Optional[Mapping[str, ResourceDefinition]] = None,
+        auto_observe_frequency_minutes: Optional[float] = None,
     ):
         self.name = name
         if isinstance(key_prefix, str):
@@ -118,6 +122,7 @@ class _ObservableSourceAsset:
         self.group_name = group_name
         self.required_resource_keys = required_resource_keys
         self.resource_defs = resource_defs
+        self.auto_observe_frequency_minutes = auto_observe_frequency_minutes
 
     def __call__(self, observe_fn: SourceAssetObserveFunction) -> SourceAsset:
         source_asset_name = self.name or observe_fn.__name__
@@ -144,4 +149,5 @@ class _ObservableSourceAsset:
             _required_resource_keys=resolved_resource_keys,
             resource_defs=self.resource_defs,
             observe_fn=observe_fn,
+            auto_observe_frequency_minutes=self.auto_observe_frequency_minutes,
         )

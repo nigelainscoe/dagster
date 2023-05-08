@@ -52,6 +52,7 @@ class AssetGraph:
         required_multi_asset_sets_by_key: Optional[Mapping[AssetKey, AbstractSet[AssetKey]]],
         code_versions_by_key: Mapping[AssetKey, Optional[str]],
         is_observable_by_key: Mapping[AssetKey, bool],
+        auto_observe_frequency_minutes_by_key: Mapping[AssetKey, Optional[float]],
     ):
         self._asset_dep_graph = asset_dep_graph
         self._source_asset_keys = source_asset_keys
@@ -63,6 +64,7 @@ class AssetGraph:
         self._required_multi_asset_sets_by_key = required_multi_asset_sets_by_key
         self._code_versions_by_key = code_versions_by_key
         self._is_observable_by_key = is_observable_by_key
+        self._auto_observe_frequency_minutes_by_key = auto_observe_frequency_minutes_by_key
 
     @property
     def asset_dep_graph(self) -> DependencyGraph[AssetKey]:
@@ -93,6 +95,9 @@ class AssetGraph:
     ) -> Mapping[AssetKey, Optional[AutoMaterializePolicy]]:
         return self._auto_materialize_policies_by_key
 
+    def get_auto_observe_frequency_minutes(self, asset_key: AssetKey) -> Optional[float]:
+        return self._auto_observe_frequency_minutes_by_key.get(asset_key)
+
     @staticmethod
     def from_assets(
         all_assets: Iterable[Union[AssetsDefinition, SourceAsset]]
@@ -109,6 +114,7 @@ class AssetGraph:
         required_multi_asset_sets_by_key: Dict[AssetKey, AbstractSet[AssetKey]] = {}
         code_versions_by_key: Dict[AssetKey, Optional[str]] = {}
         is_observable_by_key: Dict[AssetKey, bool] = {}
+        auto_observe_frequency_minutes_by_key: Dict[AssetKey, Optional[float]] = {}
 
         for asset in all_assets:
             if isinstance(asset, SourceAsset):
@@ -116,6 +122,9 @@ class AssetGraph:
                 partitions_defs_by_key[asset.key] = asset.partitions_def
                 group_names_by_key[asset.key] = asset.group_name
                 is_observable_by_key[asset.key] = asset.is_observable
+                auto_observe_frequency_minutes_by_key[
+                    asset.key
+                ] = asset.auto_observe_frequency_minutes
             else:  # AssetsDefinition
                 assets_defs.append(asset)
                 partition_mappings_by_key.update(
@@ -143,6 +152,7 @@ class AssetGraph:
             source_assets=source_assets,
             code_versions_by_key=code_versions_by_key,
             is_observable_by_key=is_observable_by_key,
+            auto_observe_frequency_minutes_by_key=auto_observe_frequency_minutes_by_key,
         )
 
     @property
@@ -556,6 +566,7 @@ class InternalAssetGraph(AssetGraph):
         source_assets: Sequence[SourceAsset],
         code_versions_by_key: Mapping[AssetKey, Optional[str]],
         is_observable_by_key: Mapping[AssetKey, bool],
+        auto_observe_frequency_minutes_by_key: Mapping[AssetKey, Optional[float]],
     ):
         super().__init__(
             asset_dep_graph=asset_dep_graph,
@@ -568,6 +579,7 @@ class InternalAssetGraph(AssetGraph):
             required_multi_asset_sets_by_key=required_multi_asset_sets_by_key,
             code_versions_by_key=code_versions_by_key,
             is_observable_by_key=is_observable_by_key,
+            auto_observe_frequency_minutes_by_key=auto_observe_frequency_minutes_by_key,
         )
         self._assets = assets
         self._source_assets = source_assets
