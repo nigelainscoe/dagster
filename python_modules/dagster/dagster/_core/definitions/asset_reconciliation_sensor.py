@@ -8,6 +8,7 @@ from typing import (
     Callable,
     Dict,
     Iterable,
+    List,
     Mapping,
     NamedTuple,
     Optional,
@@ -124,20 +125,28 @@ def can_reconcile_time_window_partition(
 
 
 class AssetReconciliationCursor(NamedTuple):
-    """Attributes:
-    latest_storage_id: The latest observed storage ID across all assets. Useful for
-        finding out what has happened since the last tick.
-    materialized_or_requested_root_asset_keys: Every entry is a non-partitioned asset with no
-        parents that has been requested by this sensor or has been materialized (even if not by
-        this sensor).
-    materialized_or_requested_root_partitions_by_asset_key: Every key is a partitioned root
-        asset. Every value is the set of that asset's partitoins that have been requested by
-        this sensor or have been materialized (even if not by this sensor).
+    """State that's saved between reconciliation evaluations.
+
+    Attributes:
+        latest_storage_id:
+            The latest observed storage ID across all assets. Useful for finding out what has
+            happened since the last tick.
+        materialized_or_requested_root_asset_keys:
+            Every entry is a non-partitioned asset with no parents that has been requested by this
+            sensor or has been materialized (even if not by this sensor).
+        materialized_or_requested_root_partitions_by_asset_key:
+            Every key is a partitioned root asset. Every value is the set of that asset's partitions
+            that have been requested by this sensor or have been materialized (even if not by
+            this sensor).
+        last_observe_request_timestamp_by_asset_key:
+            Every key is an observable source asset that has been auto-observed. The value is the
+            timestamp of the tick that requested the observation.
     """
 
     latest_storage_id: Optional[int]
     materialized_or_requested_root_asset_keys: AbstractSet[AssetKey]
     materialized_or_requested_root_partitions_by_asset_key: Mapping[AssetKey, PartitionsSubset]
+    last_observe_request_timestamp_by_asset_key: Mapping[AssetKey, float]
 
     def was_previously_materialized_or_requested(self, asset_key: AssetKey) -> bool:
         return asset_key in self.materialized_or_requested_root_asset_keys
@@ -187,6 +196,8 @@ class AssetReconciliationCursor(NamedTuple):
         newly_materialized_root_asset_keys: AbstractSet[AssetKey],
         newly_materialized_root_partitions_by_asset_key: Mapping[AssetKey, AbstractSet[str]],
         asset_graph: AssetGraph,
+        newly_observe_requested_asset_keys: Sequence[AssetKey],
+        observe_request_timestamp: float,
     ) -> "AssetReconciliationCursor":
         """Returns a cursor that represents this cursor plus the updates that have happened within the
         tick.
@@ -233,6 +244,14 @@ class AssetReconciliationCursor(NamedTuple):
             | requested_non_partitioned_root_assets
         )
 
+        result_last_observe_request_timestamp_by_asset_key = {
+            **self.last_observe_request_timestamp_by_asset_key
+        }
+        for asset_key in newly_observe_requested_asset_keys:
+            result_last_observe_request_timestamp_by_asset_key[
+                asset_key
+            ] = observe_request_timestamp
+
         if latest_storage_id and self.latest_storage_id:
             check.invariant(
                 latest_storage_id >= self.latest_storage_id,
@@ -243,6 +262,7 @@ class AssetReconciliationCursor(NamedTuple):
             latest_storage_id=latest_storage_id or self.latest_storage_id,
             materialized_or_requested_root_asset_keys=result_materialized_or_requested_root_asset_keys,
             materialized_or_requested_root_partitions_by_asset_key=result_materialized_or_requested_root_partitions_by_asset_key,
+            last_observe_request_timestamp_by_asset_key=result_last_observe_request_timestamp_by_asset_key,
         )
 
     @classmethod
@@ -251,15 +271,31 @@ class AssetReconciliationCursor(NamedTuple):
             latest_storage_id=None,
             materialized_or_requested_root_partitions_by_asset_key={},
             materialized_or_requested_root_asset_keys=set(),
+            last_observe_request_timestamp_by_asset_key={},
         )
 
     @classmethod
     def from_serialized(cls, cursor: str, asset_graph: AssetGraph) -> "AssetReconciliationCursor":
-        (
-            latest_storage_id,
-            serialized_materialized_or_requested_root_asset_keys,
-            serialized_materialized_or_requested_root_partitions_by_asset_key,
-        ) = json.loads(cursor)
+        loaded_cursor = json.loads(cursor)
+        if isinstance(loaded_cursor, list):  # backcompat
+            (
+                latest_storage_id,
+                serialized_materialized_or_requested_root_asset_keys,
+                serialized_materialized_or_requested_root_partitions_by_asset_key,
+            ) = loaded_cursor
+            serialized_last_observe_request_timestamp_by_asset_key = {}
+        else:
+            latest_storage_id = loaded_cursor["latest_storage_id"]
+            serialized_materialized_or_requested_root_asset_keys = loaded_cursor[
+                "materialized_or_requested_root_asset_keys"
+            ]
+            serialized_materialized_or_requested_root_partitions_by_asset_key = loaded_cursor[
+                "materialized_or_requested_root_partitions_by_asset_key"
+            ]
+            serialized_last_observe_request_timestamp_by_asset_key = loaded_cursor.get(
+                "last_observe_request_timestamp_by_asset_key", {}
+            )
+
         materialized_or_requested_root_partitions_by_asset_key = {}
         for (
             key_str,
@@ -290,6 +326,10 @@ class AssetReconciliationCursor(NamedTuple):
                 for key_str in serialized_materialized_or_requested_root_asset_keys
             },
             materialized_or_requested_root_partitions_by_asset_key=materialized_or_requested_root_partitions_by_asset_key,
+            last_observe_request_timestamp_by_asset_key={
+                AssetKey.from_user_string(key_str): timestamp
+                for key_str, timestamp in serialized_last_observe_request_timestamp_by_asset_key.items()
+            },
         )
 
     def serialize(self) -> str:
@@ -298,11 +338,17 @@ class AssetReconciliationCursor(NamedTuple):
             for key, subset in self.materialized_or_requested_root_partitions_by_asset_key.items()
         }
         serialized = json.dumps(
-            (
-                self.latest_storage_id,
-                [key.to_user_string() for key in self.materialized_or_requested_root_asset_keys],
-                serializable_materialized_or_requested_root_partitions_by_asset_key,
-            )
+            {
+                "latest_storage_id": self.latest_storage_id,
+                "materialized_or_requested_root_asset_keys": [
+                    key.to_user_string() for key in self.materialized_or_requested_root_asset_keys
+                ],
+                "materialized_or_requested_root_partitions_by_asset_key": serializable_materialized_or_requested_root_partitions_by_asset_key,
+                "last_observe_request_timestamp_by_asset_key": {
+                    key.to_user_string(): timestamp
+                    for key, timestamp in self.last_observe_request_timestamp_by_asset_key.items()
+                },
+            }
         )
         return serialized
 
@@ -840,6 +886,7 @@ def reconcile(
     instance: "DagsterInstance",
     cursor: AssetReconciliationCursor,
     run_tags: Optional[Mapping[str, str]],
+    auto_observe: bool,
 ):
     from dagster._utils.caching_instance_queryer import CachingInstanceQueryer  # expensive import
 
@@ -887,11 +934,24 @@ def reconcile(
         current_time=current_time,
     )
 
-    run_requests = build_run_requests(
-        asset_partitions_to_reconcile | asset_partitions_to_reconcile_for_freshness,
-        asset_graph,
-        run_tags,
+    observe_request_timestamp = pendulum.now().timestamp()
+    auto_observe_run_requests = (
+        get_auto_observe_run_requests(
+            asset_graph=asset_graph,
+            last_observe_request_timestamp_by_asset_key=cursor.last_observe_request_timestamp_by_asset_key,
+            current_timestamp=observe_request_timestamp,
+        )
+        if auto_observe
+        else []
     )
+    run_requests = [
+        *build_run_requests(
+            asset_partitions_to_reconcile | asset_partitions_to_reconcile_for_freshness,
+            asset_graph,
+            run_tags,
+        ),
+        *auto_observe_run_requests,
+    ]
 
     return run_requests, cursor.with_updates(
         latest_storage_id=latest_storage_id,
@@ -899,6 +959,12 @@ def reconcile(
         asset_graph=asset_graph,
         newly_materialized_root_asset_keys=newly_materialized_root_asset_keys,
         newly_materialized_root_partitions_by_asset_key=newly_materialized_root_partitions_by_asset_key,
+        newly_observe_requested_asset_keys=[
+            asset_key
+            for run_request in auto_observe_run_requests
+            for asset_key in run_request.asset_selection
+        ],
+        observe_request_timestamp=observe_request_timestamp,
     )
 
 
@@ -1094,9 +1160,36 @@ def build_asset_reconciliation_sensor(
             instance=context.instance,
             cursor=cursor,
             run_tags=run_tags,
+            auto_observe=False,
         )
 
         context.update_cursor(updated_cursor.serialize())
         return run_requests
 
     return _sensor
+
+
+def get_auto_observe_run_requests(
+    last_observe_request_timestamp_by_asset_key: Mapping[AssetKey, float],
+    current_timestamp: float,
+    asset_graph: AssetGraph,
+) -> Sequence[RunRequest]:
+    assets_to_auto_observe: List[AssetKey] = []
+    for asset_key in asset_graph.source_asset_keys:
+        last_observe_request_timestamp = last_observe_request_timestamp_by_asset_key.get(asset_key)
+        auto_observe_frequency_minutes = asset_graph.get_auto_observe_frequency_minutes(asset_key)
+
+        if auto_observe_frequency_minutes and (
+            last_observe_request_timestamp is None
+            or (
+                last_observe_request_timestamp + auto_observe_frequency_minutes * 60
+                < current_timestamp
+            )
+        ):
+            assets_to_auto_observe.append(asset_key)
+
+    # TODO: split by repo
+    if assets_to_auto_observe:
+        return [RunRequest(asset_selection=assets_to_auto_observe)]
+    else:
+        return []
