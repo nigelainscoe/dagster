@@ -45,7 +45,7 @@ from ..asset_in import AssetIn
 from ..asset_out import AssetOut
 from ..assets import AssetsDefinition
 from ..decorators.graph_decorator import graph
-from ..decorators.op_decorator import CODE_ORIGIN_TAG_NAME, _Op
+from ..decorators.op_decorator import CODE_ORIGIN_TAG_NAME, _Op, is_code_origin_enabled
 from ..events import AssetKey, CoercibleToAssetKeyPrefix
 from ..input import In
 from ..output import GraphOut, Out
@@ -357,6 +357,16 @@ class _Asset:
 
             op_required_resource_keys = decorator_resource_keys - arg_resource_keys
 
+            code_origin_tag = (
+                {
+                    CODE_ORIGIN_TAG_NAME: MetadataValue.json(
+                        {"file": origin_file, "line": origin_line}
+                    )
+                }
+                if is_code_origin_enabled()
+                else {}
+            )
+
             op = _Op(
                 name=out_asset_key.to_python_identifier(),
                 description=self.description,
@@ -368,9 +378,7 @@ class _Asset:
                 tags={
                     **({"kind": self.compute_kind} if self.compute_kind else {}),
                     **(self.op_tags or {}),
-                    CODE_ORIGIN_TAG_NAME: MetadataValue.json(
-                        {"file": origin_file, "line": origin_line}
-                    ),
+                    **code_origin_tag,
                 },
                 config_schema=self.config_schema,
                 retry_policy=self.retry_policy,
