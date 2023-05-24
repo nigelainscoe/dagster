@@ -2,7 +2,7 @@ import os
 import subprocess
 
 import pytest
-from dagster._core.definitions.decorators.op_decorator import CODE_ORIGIN_ENABLED
+from dagster._core.definitions.decorators.op_decorator import do_not_attach_code_origin
 from dagster._utils import file_relative_path, pushd
 from dagster_dbt import DbtCliClientResource, dbt_cli_resource
 
@@ -86,8 +86,7 @@ def dbt_build(dbt_executable, dbt_config_dir):
 
 @pytest.fixture(autouse=True)
 def ignore_code_origin():
-    CODE_ORIGIN_ENABLED[0] = False
-
-    yield
-
-    CODE_ORIGIN_ENABLED[0] = True
+    # avoid attaching code origin metadata to ops/assets, because this can change from environment
+    # to environment and break snapshot tests
+    with do_not_attach_code_origin():
+        yield
