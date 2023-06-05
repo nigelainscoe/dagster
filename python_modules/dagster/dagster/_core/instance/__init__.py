@@ -2553,6 +2553,9 @@ class DagsterInstance(DynamicPartitionsStore):
         self,
         key: AssetKey,
         is_source: Optional[bool] = None,
+        partition_key: Optional[str] = None,
+        before_cursor: Optional[int] = None,
+        after_cursor: Optional[int] = None,
     ) -> Optional[EventLogRecord]:
         from dagster._core.event_api import EventRecordsFilter
         from dagster._core.events import DagsterEventType
@@ -2567,6 +2570,9 @@ class DagsterInstance(DynamicPartitionsStore):
                 EventRecordsFilter(
                     event_type=DagsterEventType.ASSET_OBSERVATION,
                     asset_key=key,
+                    asset_partitions=[partition_key] if partition_key else None,
+                    before_cursor=before_cursor,
+                    after_cursor=after_cursor,
                 ),
                 limit=1,
             )
@@ -2578,6 +2584,9 @@ class DagsterInstance(DynamicPartitionsStore):
                 EventRecordsFilter(
                     event_type=DagsterEventType.ASSET_MATERIALIZATION,
                     asset_key=key,
+                    asset_partitions=[partition_key] if partition_key else None,
+                    before_cursor=before_cursor,
+                    after_cursor=after_cursor,
                 ),
                 limit=1,
             )
