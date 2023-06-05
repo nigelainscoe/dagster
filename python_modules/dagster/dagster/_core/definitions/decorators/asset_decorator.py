@@ -290,16 +290,13 @@ class _Asset:
         self.auto_materialize_policy = auto_materialize_policy
         self.code_version = code_version
 
-    def __call__(self, fn: Callable) -> AssetsDefinition:
-        from dagster._config.pythonic_config import (
-            validate_resource_annotated_function,
-        )
-        from dagster._core.execution.build_resources import wrap_resources_for_execution
-
-        validate_resource_annotated_function(fn)
-        asset_name = self.name or fn.__name__
-
-        asset_ins = build_asset_ins(fn, self.ins or {}, self.non_argument_deps)
+    def get_code_origin_tags(self, fn: Callable) -> Dict[str, Any]:
+        """Generates the code origin tag for an op. This is a dictionary with a single key, __code_origin,
+        whose value is a JSON-encoded dictionary with keys file and line, indicating where the asset is defined.
+        This tag is used to link to the location of the asset in the user's editor from Dagit.
+        """
+        if not is_code_origin_enabled():
+            return {}
 
         # Attempt to fetch information about where the asset is defined in code,
         # which we'll attach as a tag to the asset
@@ -311,7 +308,22 @@ class _Asset:
             origin_file = os.path.join(cwd, inspect.getsourcefile(fn))  # type: ignore
             origin_line = inspect.getsourcelines(fn)[1]
         except TypeError:
-            pass
+            return {}
+
+        return {
+            CODE_ORIGIN_TAG_NAME: MetadataValue.json({"file": origin_file, "line": origin_line})
+        }
+
+    def __call__(self, fn: Callable) -> AssetsDefinition:
+        from dagster._config.pythonic_config import (
+            validate_resource_annotated_function,
+        )
+        from dagster._core.execution.build_resources import wrap_resources_for_execution
+
+        validate_resource_annotated_function(fn)
+        asset_name = self.name or fn.__name__
+
+        asset_ins = build_asset_ins(fn, self.ins or {}, self.non_argument_deps)
 
         out_asset_key = AssetKey(list(filter(None, [*(self.key_prefix or []), asset_name])))
         with warnings.catch_warnings():
@@ -364,16 +376,6 @@ class _Asset:
 
             op_required_resource_keys = decorator_resource_keys - arg_resource_keys
 
-            code_origin_tag = (
-                {
-                    CODE_ORIGIN_TAG_NAME: MetadataValue.json(
-                        {"file": origin_file, "line": origin_line}
-                    )
-                }
-                if is_code_origin_enabled() and origin_file and origin_line
-                else {}
-            )
-
             op = _Op(
                 name=out_asset_key.to_python_identifier(),
                 description=self.description,
@@ -385,7 +387,7 @@ class _Asset:
                 tags={
                     **({"kind": self.compute_kind} if self.compute_kind else {}),
                     **(self.op_tags or {}),
-                    **code_origin_tag,
+                    **self.get_code_origin_tags(fn),
                 },
                 config_schema=self.config_schema,
                 retry_policy=self.retry_policy,
@@ -730,11 +732,7 @@ def build_asset_ins(
 
         ins_by_asset_key[asset_key] = (
             input_name.replace("-", "_"),
-            In(
-                metadata=metadata,
-                input_manager_key=input_manager_key,
-                dagster_type=dagster_type,
-            ),
+            In(metadata=metadata, input_manager_key=input_manager_key, dagster_type=dagster_type),
         )
 
     for asset_key in non_argument_deps:
