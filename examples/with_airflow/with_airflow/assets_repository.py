@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from dagster import AssetKey, Definitions, asset
 from dagster_airflow import load_assets_from_airflow_dag, make_ephemeral_airflow_db_resource
 

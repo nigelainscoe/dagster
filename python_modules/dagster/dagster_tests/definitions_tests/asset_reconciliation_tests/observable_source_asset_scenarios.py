@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from dagster import PartitionKeyRange
 from dagster._seven.compat.pendulum import create_pendulum_time
 

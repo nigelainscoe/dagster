@@ -1,4 +1,5 @@
 # pyright: reportUnusedExpression=none
+from __future__ import annotations
 
 # Type errors ignored because some of these imports target deprecated modules for compatibility with
 # airflow 1.x and 2.x.

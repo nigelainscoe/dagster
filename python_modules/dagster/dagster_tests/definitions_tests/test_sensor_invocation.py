@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from contextlib import contextmanager
 from typing import Iterator, List, Optional, cast
 from unittest import mock

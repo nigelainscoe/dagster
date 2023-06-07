@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from project_fully_featured import defs
 
 

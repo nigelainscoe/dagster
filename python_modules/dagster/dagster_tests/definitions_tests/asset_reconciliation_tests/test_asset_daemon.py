@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import pytest
 from dagster._core.instance_for_test import instance_for_test
 from dagster._core.storage.dagster_run import DagsterRunStatus

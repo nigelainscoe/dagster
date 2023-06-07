@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import numpy
 import onnxruntime as rt
 from dagster import AssetIn, AssetOut, OpExecutionContext, asset, multi_asset

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import json
 import os
 import re
@@ -75,7 +77,7 @@ def rewrite_relative_links(root: str, file_data: Dict[str, object]) -> None:
 def pack_directory_json(path_to_folder: str):
     root_data: Dict[str, Any] = {}
 
-    for (root, _, files) in os.walk(path_to_folder):
+    for root, _, files in os.walk(path_to_folder):
         for filename in files:
             if filename.endswith(".fjson"):
                 route = extract_route_from_path(path_to_folder, root, filename)

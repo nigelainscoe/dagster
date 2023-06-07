@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from .assets_repository import (
     sda_examples as sda_examples,
 )

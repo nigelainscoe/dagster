@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import List
 
 from dagster import In, Out, job, make_values_resource, op

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from dagster import OpExecutionContext
 from dagster_dbt.asset_decorator import dbt_assets
 from dagster_dbt.cli import DbtCli, DbtManifest

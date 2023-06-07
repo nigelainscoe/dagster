@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Dict, List, NamedTuple, Optional, Sequence, Set, Tuple
 
 from dagster import (

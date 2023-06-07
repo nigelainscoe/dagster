@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import pendulum
 import pytest
 from dagster import (

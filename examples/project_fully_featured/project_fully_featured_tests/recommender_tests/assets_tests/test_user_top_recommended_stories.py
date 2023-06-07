@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import numpy as np
 from pandas import DataFrame, Series
 from project_fully_featured.assets.recommender.user_story_matrix import (

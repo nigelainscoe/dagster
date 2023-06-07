@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import datetime
 from typing import AbstractSet, Dict, Mapping, Optional, Sequence, Tuple, cast
 

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from ..example_project.example_repo.repo import single_pod_job
 
 

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from dagster import Config, job, op
 from dagster._utils import file_relative_path
 from dagster_ge.factory import ge_validation_op_factory

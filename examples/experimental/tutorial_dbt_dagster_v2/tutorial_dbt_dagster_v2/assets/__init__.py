@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from dagster import file_relative_path
 
 DBT_PROJECT_DIR = file_relative_path(__file__, "../../jaffle_shop")

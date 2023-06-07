@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from assets_pandas_pyspark import get_spark_weather_defs, get_weather_defs
 
 

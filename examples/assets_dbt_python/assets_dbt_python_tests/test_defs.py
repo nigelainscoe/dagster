@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from assets_dbt_python import defs
 
 

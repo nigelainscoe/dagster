@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import pandas as pd
 from dagster import AssetIn, asset, file_relative_path
 from dagstermill import define_dagstermill_asset

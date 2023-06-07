@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from dagster import Definitions, load_assets_from_modules
 from dagster_duckdb import build_duckdb_io_manager
 from dagster_duckdb_pandas import DuckDBPandasTypeHandler

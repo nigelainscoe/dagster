@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 
 from dagster._utils import file_relative_path

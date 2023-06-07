@@ -2,6 +2,7 @@
 """A basic script that will create tables in the source postgres database, then automatically
 create an Airbyte Connection between the source database and destination database.
 """
+from __future__ import annotations
 
 import random
 from typing import Any, Dict, Mapping

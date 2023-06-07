@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from assets_pandas_type_metadata.assets.bollinger_analysis import (
     sp500_anomalous_events,
     sp500_bollinger_bands,

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from dagster._utils import file_relative_path
 from dagster_postgres.utils import get_conn_string
 

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from dagster import Config, asset
 from pydantic import Field
 

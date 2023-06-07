@@ -1,4 +1,6 @@
 # start_marker
+from __future__ import annotations
+
 import pandas as pd
 from dagster import AssetKey, SourceAsset, asset
 from pandas import DataFrame

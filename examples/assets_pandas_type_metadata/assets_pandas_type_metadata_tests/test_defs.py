@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from assets_pandas_type_metadata import defs
 
 

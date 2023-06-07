@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from ..repo import my_job
 
 

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from dagster import SourceAsset, TableSchema, asset
 from pandas import DataFrame
 

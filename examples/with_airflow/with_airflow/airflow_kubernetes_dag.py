@@ -1,4 +1,5 @@
 # pyright: reportUnusedExpression=none
+from __future__ import annotations
 
 from airflow import models
 from airflow.operators.dummy_operator import DummyOperator  # type: ignore

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from dagster import AssetKey, AutoMaterializePolicy, SourceAsset, asset, repository
 from dagster._core.definitions.freshness_policy import FreshnessPolicy
 

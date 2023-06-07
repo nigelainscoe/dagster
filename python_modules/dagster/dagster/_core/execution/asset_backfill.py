@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import json
 from datetime import datetime
 from enum import Enum
@@ -428,7 +430,7 @@ def execute_asset_backfill_iteration(
     This is a generator so that we can return control to the daemon and let it heartbeat during
     expensive operations.
     """
-    from dagster._core.execution.backfill import BulkActionStatus, PartitionBackfill
+    from dagster._core.execution.backfill import BulkActionStatus
 
     asset_graph = ExternalAssetGraph.from_workspace(
         workspace_process_context.create_request_context()

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from with_pyspark.definitions import defs
 
 

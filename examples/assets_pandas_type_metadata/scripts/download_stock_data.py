@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # ruff: noqa: T201
-
+from __future__ import annotations
 
 import os
 import sys

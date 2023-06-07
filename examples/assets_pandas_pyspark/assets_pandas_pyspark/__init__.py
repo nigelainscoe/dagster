@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+
 def get_weather_defs():
     # gather_assets_start
 

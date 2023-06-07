@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import numpy as np
 from dagster import asset
 from pandas import DataFrame
