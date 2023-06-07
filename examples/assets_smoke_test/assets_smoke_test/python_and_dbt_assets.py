@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from dagster import (
     Definitions,
     EnvVar,
@@ -11,7 +13,9 @@ from dagster import (
 from dagster._utils import file_relative_path
 from dagster_dbt import DbtCliClientResource, load_assets_from_dbt_project
 from dagster_snowflake_pandas import SnowflakePandasIOManager
-from pandas import DataFrame
+
+if TYPE_CHECKING:
+    from pandas import DataFrame
 
 DBT_PROJECT_DIR = file_relative_path(__file__, "../dbt_project")
 DBT_PROFILES_DIR = file_relative_path(__file__, "../dbt_project/config")

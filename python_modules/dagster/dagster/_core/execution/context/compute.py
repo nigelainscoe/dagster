@@ -1,18 +1,26 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import AbstractSet, Any, Dict, Iterator, List, Mapping, Optional, Sequence, Set, cast
-
-from typing_extensions import TypeAlias
+from typing import (
+    TYPE_CHECKING,
+    AbstractSet,
+    Any,
+    Dict,
+    Iterator,
+    List,
+    Mapping,
+    Optional,
+    Sequence,
+    Set,
+    cast,
+)
 
 import dagster._check as check
 from dagster._annotations import experimental, public
-from dagster._core.definitions.assets import AssetsDefinition
 from dagster._core.definitions.data_version import (
     DataProvenance,
     extract_data_provenance_from_entry,
 )
-from dagster._core.definitions.dependency import Node, NodeHandle
 from dagster._core.definitions.events import (
     AssetKey,
     AssetMaterialization,
@@ -20,24 +28,30 @@ from dagster._core.definitions.events import (
     ExpectationResult,
     UserEvent,
 )
-from dagster._core.definitions.job_definition import JobDefinition
 from dagster._core.definitions.op_definition import OpDefinition
-from dagster._core.definitions.partition import PartitionsDefinition
-from dagster._core.definitions.partition_key_range import PartitionKeyRange
-from dagster._core.definitions.step_launcher import StepLauncher
-from dagster._core.definitions.time_window_partitions import TimeWindow
 from dagster._core.errors import (
     DagsterInvalidPropertyError,
     DagsterInvariantViolationError,
 )
 from dagster._core.events import DagsterEvent
-from dagster._core.instance import DagsterInstance
-from dagster._core.log_manager import DagsterLogManager
-from dagster._core.storage.dagster_run import DagsterRun
 from dagster._utils.backcompat import deprecation_warning
 from dagster._utils.forked_pdb import ForkedPdb
 
 from .system import StepExecutionContext
+
+if TYPE_CHECKING:
+    from typing_extensions import TypeAlias
+
+    from dagster._core.definitions.assets import AssetsDefinition
+    from dagster._core.definitions.dependency import Node, NodeHandle
+    from dagster._core.definitions.job_definition import JobDefinition
+    from dagster._core.definitions.partition import PartitionsDefinition
+    from dagster._core.definitions.partition_key_range import PartitionKeyRange
+    from dagster._core.definitions.step_launcher import StepLauncher
+    from dagster._core.definitions.time_window_partitions import TimeWindow
+    from dagster._core.instance import DagsterInstance
+    from dagster._core.log_manager import DagsterLogManager
+    from dagster._core.storage.dagster_run import DagsterRun
 
 
 class AbstractComputeExecutionContext(ABC):

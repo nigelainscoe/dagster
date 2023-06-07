@@ -1,12 +1,14 @@
 from __future__ import annotations
 
-from typing import Any, Mapping
+from typing import TYPE_CHECKING, Any, Mapping
 
-from dagster import OpExecutionContext
 from dagster_dbt.asset_decorator import dbt_assets
 from dagster_dbt.cli import DbtCli, DbtManifest
 
 from . import MANIFEST_PATH
+
+if TYPE_CHECKING:
+    from dagster import OpExecutionContext
 
 
 class CustomizedDbtManifest(DbtManifest):

@@ -1,18 +1,20 @@
 from __future__ import annotations
 
 import json
-from typing import AbstractSet, Any, Callable, Mapping, Optional, Sequence
+from typing import TYPE_CHECKING, AbstractSet, Any, Callable, Mapping, Optional, Sequence
 
 import dagster._check as check
 from dagster import AssetKey, AssetSelection
 from dagster._annotations import experimental
-from dagster._core.definitions.asset_graph import AssetGraph
 
 from dagster_dbt.asset_utils import (
     default_asset_key_fn,
     is_non_asset_node,
 )
 from dagster_dbt.utils import select_unique_ids_from_manifest
+
+if TYPE_CHECKING:
+    from dagster._core.definitions.asset_graph import AssetGraph
 
 
 @experimental

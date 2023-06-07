@@ -1,13 +1,15 @@
 from __future__ import annotations
 
-from typing import List, Optional
+from typing import TYPE_CHECKING, List, Optional
 
 import pytest
 from dagster import AssetObservation, Output
 from dagster_dbt.cli import DbtCli, DbtCliEventMessage, DbtManifest
-from pytest_mock import MockerFixture
 
 from ..conftest import TEST_PROJECT_DIR
+
+if TYPE_CHECKING:
+    from pytest_mock import MockerFixture
 
 pytest.importorskip("dbt.version", minversion="1.4")
 

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any, Callable, NamedTuple, Optional, Type, TypeVar, Union, cast
+from typing import TYPE_CHECKING, Any, Callable, NamedTuple, Optional, TypeVar, Union, cast
 
 from typing_extensions import Self
 
@@ -10,7 +10,6 @@ from dagster import (
     _check as check,
 )
 from dagster._config import EvaluateValueResult
-from dagster._config.config_schema import UserConfigSchema
 from dagster._core.decorator_utils import get_function_params
 
 from .definition_config_schema import (
@@ -19,6 +18,11 @@ from .definition_config_schema import (
     IDefinitionConfigSchema,
     convert_user_facing_definition_config_schema,
 )
+
+if TYPE_CHECKING:
+    from typing_extensions import Self
+
+    from dagster._config.config_schema import UserConfigSchema
 
 
 class ConfigurableDefinition(ABC):

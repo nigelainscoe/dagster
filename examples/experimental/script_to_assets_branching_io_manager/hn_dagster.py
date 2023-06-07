@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import os
+from typing import TYPE_CHECKING
 
-import pandas
 from dagster import (
     AssetKey,
     AssetMaterialization,
@@ -19,6 +19,9 @@ from dagster._core.definitions.metadata import MetadataValue
 from dagster._core.storage.branching.branching_io_manager import BranchingIOManager
 from dagster._core.storage.fs_io_manager import PickledObjectFilesystemIOManager
 from hackernews import extract, transform
+
+if TYPE_CHECKING:
+    import pandas
 
 
 @op

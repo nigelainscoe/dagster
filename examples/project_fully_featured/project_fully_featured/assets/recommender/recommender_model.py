@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import random
+from typing import TYPE_CHECKING
 
 from dagster import AssetIn, MetadataValue, Output, asset
 from pandas import DataFrame, Series
 from sklearn.decomposition import TruncatedSVD
 
-from .user_story_matrix import IndexedCooMatrix
+if TYPE_CHECKING:
+    from .user_story_matrix import IndexedCooMatrix
 
 
 @asset(key_prefix=["s3", "recommender"])

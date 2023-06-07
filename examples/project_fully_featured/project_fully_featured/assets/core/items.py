@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from dagster import Output, asset
 from pandas import DataFrame
-from pyspark.sql import DataFrame as SparkDF
 from pyspark.sql.types import (
     ArrayType,
     DoubleType,
@@ -13,9 +14,13 @@ from pyspark.sql.types import (
 )
 
 from project_fully_featured.partitions import hourly_partitions
-from project_fully_featured.resources.hn_resource import HNClient
 
 from .id_range_for_time import id_range_for_time
+
+if TYPE_CHECKING:
+    from pyspark.sql import DataFrame as SparkDF
+
+    from project_fully_featured.resources.hn_resource import HNClient
 
 HN_ITEMS_SCHEMA = StructType(
     [

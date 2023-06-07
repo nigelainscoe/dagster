@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 import os
+from typing import TYPE_CHECKING
 
-from dagster import SensorDefinition
 from dagster_slack import make_slack_on_run_failure_sensor
+
+if TYPE_CHECKING:
+    from dagster import SensorDefinition
 
 
 def make_slack_on_failure_sensor(base_url: str) -> SensorDefinition:

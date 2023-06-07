@@ -1,8 +1,12 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import wandb
 from dagster import AssetIn, OpExecutionContext, asset
-from dagster_wandb import WandbArtifactConfiguration
+
+if TYPE_CHECKING:
+    from dagster_wandb import WandbArtifactConfiguration
 
 wandb_artifact_configuration: WandbArtifactConfiguration = {
     "description": "My **Markdown** description",

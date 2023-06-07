@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import os
+from typing import TYPE_CHECKING
 
-import pandas as pd
 from dagster import DailyPartitionsDefinition, MetadataValue, asset
 from dagster_dbt import load_assets_from_dbt_project
 
@@ -13,6 +13,9 @@ from .resources import (
     GithubResource,
     PyPiResource,
 )
+
+if TYPE_CHECKING:
+    import pandas as pd
 
 dbt_assets = load_assets_from_dbt_project(
     project_dir=DBT_PROJECT_DIR,

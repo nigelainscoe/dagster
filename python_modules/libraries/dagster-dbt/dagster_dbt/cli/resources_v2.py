@@ -6,7 +6,7 @@ import subprocess
 import sys
 import time
 from dataclasses import dataclass
-from typing import Any, Dict, Iterator, List, Mapping, Optional, Sequence, Union
+from typing import TYPE_CHECKING, Any, Dict, Iterator, List, Mapping, Optional, Sequence, Union
 
 from dagster import (
     AssetKey,
@@ -20,9 +20,11 @@ from dagster._annotations import experimental
 from dbt.contracts.results import NodeStatus
 from dbt.node_types import NodeType
 from pydantic import Field
-from typing_extensions import Literal
 
 from ..asset_utils import default_asset_key_fn, default_description_fn, output_name_fn
+
+if TYPE_CHECKING:
+    from typing_extensions import Literal
 
 logger = get_dagster_logger()
 

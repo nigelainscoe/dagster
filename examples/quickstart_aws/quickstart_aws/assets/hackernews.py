@@ -3,13 +3,16 @@ from __future__ import annotations
 import base64
 import os
 from io import BytesIO
+from typing import TYPE_CHECKING
 
 import matplotlib.pyplot as plt
 import pandas as pd
 import requests
 from dagster import MetadataValue, OpExecutionContext, asset
-from dagster_aws.s3 import S3Resource
 from wordcloud import STOPWORDS, WordCloud
+
+if TYPE_CHECKING:
+    from dagster_aws.s3 import S3Resource
 
 
 @asset(group_name="hackernews", compute_kind="HackerNews API")

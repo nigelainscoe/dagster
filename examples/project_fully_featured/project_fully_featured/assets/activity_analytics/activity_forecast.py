@@ -1,7 +1,11 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from dagster import asset
-from pandas import DataFrame
+
+if TYPE_CHECKING:
+    from pandas import DataFrame
 
 
 @asset

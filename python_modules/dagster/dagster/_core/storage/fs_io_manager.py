@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 import pickle
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 from pydantic import Field
 from upath import UPath
@@ -17,12 +17,14 @@ from dagster._config import StringSource
 from dagster._config.pythonic_config import ConfigurableIOManagerFactory
 from dagster._core.definitions.events import AssetKey, AssetMaterialization
 from dagster._core.definitions.metadata import MetadataValue
-from dagster._core.execution.context.init import InitResourceContext
 from dagster._core.execution.context.input import InputContext
 from dagster._core.execution.context.output import OutputContext
 from dagster._core.storage.io_manager import IOManager, dagster_maintained_io_manager, io_manager
 from dagster._core.storage.upath_io_manager import UPathIOManager
 from dagster._utils import PICKLE_PROTOCOL, mkdir_p
+
+if TYPE_CHECKING:
+    from dagster._core.execution.context.init import InitResourceContext
 
 
 class FilesystemIOManager(ConfigurableIOManagerFactory["PickledObjectFilesystemIOManager"]):

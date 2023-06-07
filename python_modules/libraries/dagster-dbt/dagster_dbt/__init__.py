@@ -53,7 +53,6 @@ from typing import TYPE_CHECKING, Any, Mapping, Sequence, Tuple
 
 from dagster._core.libraries import DagsterLibraryRegistry
 from dagster._utils.backcompat import deprecation_warning
-from typing_extensions import Final
 
 DagsterLibraryRegistry.register("dagster-dbt", __version__)
 
@@ -64,6 +63,8 @@ if TYPE_CHECKING:
     # )
 
     ##### Deprecating dbt-rpc
+    from typing_extensions import Final
+
     from .errors import (
         DagsterDbtRpcUnexpectedPollOutputError as DagsterDbtRpcUnexpectedPollOutputError,
     )

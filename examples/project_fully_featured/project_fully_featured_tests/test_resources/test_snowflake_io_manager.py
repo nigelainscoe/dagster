@@ -3,12 +3,10 @@ from __future__ import annotations
 import os
 import uuid
 from contextlib import contextmanager
-from typing import Iterator
+from typing import TYPE_CHECKING, Iterator
 
 import pytest
 from dagster import AssetKey, asset, build_input_context, build_output_context
-from dagster._core.execution.context.input import InputContext
-from dagster._core.execution.context.output import OutputContext
 from pandas import DataFrame as PandasDataFrame
 from project_fully_featured.resources import SHARED_SNOWFLAKE_CONF
 from project_fully_featured.resources.snowflake_io_manager import (
@@ -17,6 +15,10 @@ from project_fully_featured.resources.snowflake_io_manager import (
 )
 from pyspark.sql import Row, SparkSession
 from pyspark.sql.types import IntegerType, StringType, StructField, StructType
+
+if TYPE_CHECKING:
+    from dagster._core.execution.context.input import InputContext
+    from dagster._core.execution.context.output import OutputContext
 
 
 def mock_output_context(asset_key: AssetKey) -> OutputContext:

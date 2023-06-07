@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-from typing import cast
+from typing import TYPE_CHECKING, cast
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -9,7 +9,9 @@ import pandera as pa
 import requests
 import seaborn as sns
 from dagster_pandera import pandera_schema_to_dagster_type
-from pandera.typing import Series
+
+if TYPE_CHECKING:
+    from pandera.typing import Series
 
 # ****************************************************************************
 # ***** TYPES ****************************************************************

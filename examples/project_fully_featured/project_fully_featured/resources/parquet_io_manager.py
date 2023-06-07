@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-from typing import Union
+from typing import TYPE_CHECKING, Union
 
 import pandas
 from dagster import (
@@ -12,8 +12,10 @@ from dagster import (
     _check as check,
 )
 from dagster._seven.temp_dir import get_system_temp_directory
-from dagster_pyspark.resources import PySparkResource
 from pyspark.sql import DataFrame as PySparkDataFrame
+
+if TYPE_CHECKING:
+    from dagster_pyspark.resources import PySparkResource
 
 
 class PartitionedParquetIOManager(ConfigurableIOManager):

@@ -5,6 +5,7 @@ import inspect
 import re
 from functools import partial
 from typing import (
+    TYPE_CHECKING,
     Any,
     Callable,
     Dict,
@@ -33,9 +34,7 @@ from dagster._core.definitions.cacheable_assets import (
     AssetsDefinitionCacheableData,
     CacheableAssetsDefinition,
 )
-from dagster._core.definitions.events import CoercibleToAssetKeyPrefix
 from dagster._core.definitions.metadata import MetadataUserInput
-from dagster._core.definitions.resource_definition import ResourceDefinition
 from dagster._core.errors import DagsterStepOutputNotFoundError
 from dagster._core.execution.context.init import build_init_resource_context
 
@@ -45,6 +44,10 @@ from dagster_fivetran.utils import (
     get_fivetran_connector_url,
     metadata_for_table,
 )
+
+if TYPE_CHECKING:
+    from dagster._core.definitions.events import CoercibleToAssetKeyPrefix
+    from dagster._core.definitions.resource_definition import ResourceDefinition
 
 
 def _build_fivetran_assets(
