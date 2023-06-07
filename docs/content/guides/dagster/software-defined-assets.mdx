@@ -28,6 +28,8 @@ In this example, we'll define some tables with dependencies on each other. We ha
 Here are our asset definitions that define tables we want to materialize.
 
 ```python file=../../assets_pandas_pyspark/assets_pandas_pyspark/assets/table_assets.py startafter=start_marker endbefore=end_marker
+from __future__ import annotations
+
 import pandas as pd
 from dagster import AssetKey, SourceAsset, asset
 from pandas import DataFrame
@@ -91,6 +93,7 @@ The functions we used to define our assets describe how to compute their content
 
 ```python file=../../assets_pandas_pyspark/assets_pandas_pyspark/local_filesystem_io_manager.py
 # local_filesystem_io_manager.py
+from __future__ import annotations
 
 import os
 
@@ -122,6 +125,8 @@ class LocalFileSystemIOManager(ConfigurableIOManager):
 Not all the assets in the same dependency graph need to have the same Python type. Here's an asset whose computation is defined using Spark DataFrames, that depends on the `daily_temperature_highs` asset we defined above using Pandas.
 
 ```python file=../../assets_pandas_pyspark/assets_pandas_pyspark/assets/spark_asset.py
+from __future__ import annotations
+
 from dagster import asset
 from pyspark.sql import (
     DataFrame as SparkDF,
@@ -165,13 +170,12 @@ Because the same assets will be written and read into different Python types in 
 
 ```python file=../../assets_pandas_pyspark/assets_pandas_pyspark/local_spark_filesystem_io_manager.py
 # local_spark_filesystem_io_manager.py
+from __future__ import annotations
 
 # Data is stored in Parquet files using the "Hadoop-style" layout in which each table corresponds to a
 # directory, and each file within the directory contains some of the rows.
-
 # The processing options are Pandas and Spark. A table can be created from a Pandas DataFrame
 # and then consumed in a downstream computation as a Spark DataFrame, and vice versa.
-
 import glob
 import os
 from typing import Union

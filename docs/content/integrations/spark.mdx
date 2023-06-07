@@ -45,6 +45,8 @@ This example assumes that all the outputs within the Dagster pipeline will be Py
 This example writes out `DataFrames` to the local file system, but can be tweaked to write to cloud object stores like S3 by changing to the `write` and `read` invocations.
 
 ```python file=../../with_pyspark/with_pyspark/definitions.py
+from __future__ import annotations
+
 import os
 
 from dagster import ConfigurableIOManager, Definitions, asset
@@ -89,6 +91,8 @@ defs = Definitions(
 This example demonstrates how to use the <PyObject module='dagster_aws.emr' object='emr_pyspark_step_launcher' /> to have an asset run as a Spark step on an EMR cluster. In it, each of the two assets will be executed as a separate EMR step on the same EMR cluster.
 
 ```python file=../../with_pyspark_emr/with_pyspark_emr/definitions.py
+from __future__ import annotations
+
 from pathlib import Path
 from typing import Any
 
