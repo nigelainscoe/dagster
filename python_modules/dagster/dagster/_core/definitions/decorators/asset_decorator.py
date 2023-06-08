@@ -1,5 +1,3 @@
-import inspect
-import os
 import warnings
 from inspect import Parameter
 from typing import (
@@ -28,7 +26,6 @@ from dagster._core.definitions.freshness_policy import FreshnessPolicy
 from dagster._core.definitions.metadata import (
     ArbitraryMetadataMapping,
     MetadataUserInput,
-    MetadataValue,
 )
 from dagster._core.definitions.resource_annotation import (
     get_resource_args,
@@ -45,7 +42,7 @@ from ..asset_in import AssetIn
 from ..asset_out import AssetOut
 from ..assets import AssetsDefinition
 from ..decorators.graph_decorator import graph
-from ..decorators.op_decorator import CODE_ORIGIN_TAG_NAME, _Op, is_code_origin_enabled
+from ..decorators.op_decorator import _Op
 from ..events import AssetKey, CoercibleToAssetKeyPrefix
 from ..input import In
 from ..output import GraphOut, Out
@@ -290,30 +287,6 @@ class _Asset:
         self.auto_materialize_policy = auto_materialize_policy
         self.code_version = code_version
 
-    def get_code_origin_tags(self, fn: Callable) -> Dict[str, Any]:
-        """Generates the code origin tag for an op. This is a dictionary with a single key, __code_origin,
-        whose value is a JSON-encoded dictionary with keys file and line, indicating where the asset is defined.
-        This tag is used to link to the location of the asset in the user's editor from Dagit.
-        """
-        if not is_code_origin_enabled():
-            return {}
-
-        # Attempt to fetch information about where the asset is defined in code,
-        # which we'll attach as a tag to the asset
-        cwd = os.getcwd()
-
-        origin_file = None
-        origin_line = None
-        try:
-            origin_file = os.path.join(cwd, inspect.getsourcefile(fn))  # type: ignore
-            origin_line = inspect.getsourcelines(fn)[1]
-        except TypeError:
-            return {}
-
-        return {
-            CODE_ORIGIN_TAG_NAME: MetadataValue.json({"file": origin_file, "line": origin_line})
-        }
-
     def __call__(self, fn: Callable) -> AssetsDefinition:
         from dagster._config.pythonic_config import (
             validate_resource_annotated_function,
@@ -387,7 +360,6 @@ class _Asset:
                 tags={
                     **({"kind": self.compute_kind} if self.compute_kind else {}),
                     **(self.op_tags or {}),
-                    **self.get_code_origin_tags(fn),
                 },
                 config_schema=self.config_schema,
                 retry_policy=self.retry_policy,
