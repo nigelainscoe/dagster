@@ -4,7 +4,7 @@ import * as React from 'react';
 import {Link} from 'react-router-dom';
 import styled from 'styled-components/macro';
 
-import {CodeLink} from '../app/CodeLink';
+import {CodeLink, VersionControlCodeLink} from '../app/CodeLink';
 import {ASSET_NODE_CONFIG_FRAGMENT} from '../assets/AssetConfig';
 import {AssetDefinedInMultipleReposNotice} from '../assets/AssetDefinedInMultipleReposNotice';
 import {
@@ -70,18 +70,30 @@ export const SidebarAssetInfo: React.FC<{
   const hasAssetMetadata = assetType || assetMetadata.length > 0;
   const assetConfigSchema = asset.configField?.configType;
   const codeLinkMetadata = asset.op?.metadata.find((e) => e.key === '__code_origin')?.value;
+  const gitPath = asset.repository?.displayMetadata.find((e) => e.key === 'url')?.value;
 
   let codeLink = null;
   if (codeLinkMetadata) {
     const [codeLinkPathToModule, codeLinkPathInModule, codeLinkLineNumber] = codeLinkMetadata.split(
       ':',
     );
-    codeLink = (
-      <CodeLink
-        file={codeLinkPathToModule + codeLinkPathInModule}
-        lineNumber={parseInt(codeLinkLineNumber)}
-      />
-    );
+
+    if (gitPath) {
+      codeLink = (
+        <VersionControlCodeLink
+          versionControlUrl={gitPath}
+          pathInModule={codeLinkPathInModule}
+          lineNumber={parseInt(codeLinkLineNumber)}
+        />
+      );
+    } else {
+      codeLink = (
+        <CodeLink
+          file={codeLinkPathToModule + codeLinkPathInModule}
+          lineNumber={parseInt(codeLinkLineNumber)}
+        />
+      );
+    }
   }
 
   const OpMetadataPlugin = asset.op?.metadata && pluginForMetadata(asset.op.metadata);
@@ -269,6 +281,10 @@ const SIDEBAR_ASSET_FRAGMENT = gql`
     repository {
       id
       name
+      displayMetadata {
+        key
+        value
+      }
       location {
         id
         name

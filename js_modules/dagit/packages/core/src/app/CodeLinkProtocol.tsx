@@ -5,7 +5,7 @@ import {useStateWithStorage} from '../hooks/useStateWithStorage';
 
 export const CodeLinkProtocolKey = 'CodeLinkProtocolPreference';
 
-const POPULAR_PROTOCOLS = {
+const POPULAR_PROTOCOLS: {[key: string]: string} = {
   'vscode://file/{FILE}:{LINE}': 'Visual Studio Code',
   '': 'Custom',
 };
