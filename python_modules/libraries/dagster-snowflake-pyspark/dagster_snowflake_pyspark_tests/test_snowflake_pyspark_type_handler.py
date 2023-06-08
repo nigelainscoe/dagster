@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 import uuid
 from contextlib import contextmanager
-from typing import Iterator
+from typing import Any, Iterator, Mapping
 from unittest.mock import patch
 
 import pytest
@@ -54,7 +54,7 @@ resource_config = {
 IS_BUILDKITE = os.getenv("BUILDKITE") is not None
 
 
-SHARED_BUILDKITE_SNOWFLAKE_CONF = {
+SHARED_BUILDKITE_SNOWFLAKE_CONF: Mapping[str, Any] = {
     "account": os.getenv("SNOWFLAKE_ACCOUNT", ""),
     "user": "BUILDKITE",
     "password": os.getenv("SNOWFLAKE_BUILDKITE_PASSWORD", ""),
