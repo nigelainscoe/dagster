@@ -1,3 +1,5 @@
+# pyright uses pandas 2 but docs_snippets is stuck on pandas 1 due to pins in dagster-duckdb-pandas
+# type: ignore
 from datetime import datetime
 
 from dagster_pandas import RowCountConstraint, create_dagster_pandas_dataframe_type
