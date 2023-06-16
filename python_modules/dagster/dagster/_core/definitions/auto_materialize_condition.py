@@ -1,7 +1,10 @@
 from enum import Enum
-from typing import NamedTuple, Union
+from typing import TYPE_CHECKING, NamedTuple, Optional, Set, Union
 
 from dagster._serdes import whitelist_for_serdes
+
+if TYPE_CHECKING:
+    from dagster import AssetKey
 
 
 @whitelist_for_serdes
@@ -61,6 +64,7 @@ class ParentOutdatedAutoMaterializeCondition(NamedTuple):
     """
 
     decision_type: AutoMaterializeDecisionType = AutoMaterializeDecisionType.SKIP
+    parent_asset_keys: Optional[Set["AssetKey"]] = None
 
 
 @whitelist_for_serdes
