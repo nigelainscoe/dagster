@@ -602,7 +602,6 @@ def _submit_run_request(
     workspace_process_context: IWorkspaceProcessContext,
     external_schedule: ExternalSchedule,
     schedule_time: datetime.datetime,
-    code_location: CodeLocation,
     logger,
     debug_crash_flags,
 ) -> SubmitRunRequestResult:
@@ -633,6 +632,10 @@ def _submit_run_request(
             op_selection=external_schedule.op_selection,
             asset_selection=run_request.asset_selection,
         )
+        code_location = _get_code_loocation_for_schedule(
+            workspace_process_context, external_schedule
+        )
+
         external_job = code_location.get_external_job(job_subset_selector)
 
         run = _create_scheduler_run(
@@ -666,6 +669,16 @@ def _submit_run_request(
     )
 
 
+def _get_code_loocation_for_schedule(
+    workspace_process_context: IWorkspaceProcessContext,
+    external_schedule: ExternalSchedule,
+):
+    schedule_origin = external_schedule.get_external_origin()
+    return workspace_process_context.create_request_context().get_code_location(
+        schedule_origin.external_repository_origin.code_location_origin.location_name
+    )
+
+
 def _schedule_runs_at_time(
     workspace_process_context: IWorkspaceProcessContext,
     logger: logging.Logger,
@@ -676,12 +689,9 @@ def _schedule_runs_at_time(
     debug_crash_flags: Optional[SingleInstigatorDebugCrashFlags] = None,
 ) -> "DaemonIterator":
     instance = workspace_process_context.instance
-    schedule_origin = external_schedule.get_external_origin()
     repository_handle = external_schedule.handle.repository_handle
 
-    code_location = workspace_process_context.create_request_context().get_code_location(
-        schedule_origin.external_repository_origin.code_location_origin.location_name
-    )
+    code_location = _get_code_loocation_for_schedule(workspace_process_context, external_schedule)
 
     schedule_execution_data = code_location.get_external_schedule_execution_data(
         instance=instance,
@@ -730,7 +740,6 @@ def _schedule_runs_at_time(
         workspace_process_context,
         external_schedule,
         schedule_time,
-        code_location,
         logger,
         debug_crash_flags,
     )
