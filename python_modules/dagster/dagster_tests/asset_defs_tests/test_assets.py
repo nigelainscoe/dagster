@@ -35,11 +35,13 @@ from dagster import (
 from dagster._check import CheckError
 from dagster._core.definitions import AssetIn, SourceAsset, asset, multi_asset
 from dagster._core.definitions.auto_materialize_policy import AutoMaterializePolicy
+from dagster._core.definitions.events import AssetMaterialization
 from dagster._core.errors import (
     DagsterInvalidDefinitionError,
     DagsterInvalidInvocationError,
     DagsterInvalidPropertyError,
 )
+from dagster._core.execution.context.compute import AssetExecutionContext
 from dagster._core.instance import DagsterInstance
 from dagster._core.storage.mem_io_manager import InMemoryIOManager
 from dagster._core.test_utils import instance_for_test
@@ -1476,3 +1478,68 @@ def test_asset_takes_bare_resource():
     defs = Definitions(assets=[blah])
     defs.get_implicit_global_asset_job_def().execute_in_process()
     assert executed["yes"]
+
+
+def test_return_materialization():
+    #
+    # status quo - use add add_output_metadata
+    #
+    @asset
+    def add(context: AssetExecutionContext):
+        context.add_output_metadata(
+            metadata={"one": 1},
+        )
+
+    asset_job = define_asset_job("bar", [add]).resolve([add], [])
+
+    result = asset_job.execute_in_process()
+    assert result.success
+
+    mats = result.asset_materializations_for_node(add.node_def.name)
+    assert len(mats) == 1
+    # working with core metadata repr values sucks, ie IntMetadataValue
+    assert "one" in mats[0].metadata
+    assert mats[0].tags
+
+    #
+    # side quest: may want to update this pattern to work as well
+    #
+    @asset
+    def logged(context: AssetExecutionContext):
+        context.log_event(
+            AssetMaterialization(
+                metadata={"one": 1},
+            )
+        )
+
+    asset_job = define_asset_job("bar", [logged]).resolve([logged], [])
+
+    result = asset_job.execute_in_process()
+    assert result.success
+
+    mats = result.asset_materializations_for_node(logged.node_def.name)
+    # should we change this? currently get implicit materialization for output + logged event
+    assert len(mats) == 2
+    assert "one" in mats[0].metadata
+    # assert mats[0].tags # fails
+    # assert "one" in mats[1].metadata  # fails
+    assert mats[1].tags
+
+    #
+    # main exploration
+    #
+    @asset
+    def ret_untyped(context: AssetExecutionContext):
+        return AssetMaterialization(
+            metadata={"one": 1},
+        )
+
+    asset_job = define_asset_job("bar", [ret_untyped]).resolve([ret_untyped], [])
+
+    result = asset_job.execute_in_process()
+    assert result.success
+
+    mats = result.asset_materializations_for_node(ret_untyped.node_def.name)
+    assert len(mats) == 1, mats
+    assert "one" in mats[0].metadata
+    assert mats[0].tags
