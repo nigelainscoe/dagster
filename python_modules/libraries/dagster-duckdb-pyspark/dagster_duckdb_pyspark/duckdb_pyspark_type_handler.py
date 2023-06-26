@@ -1,5 +1,6 @@
 from typing import Optional, Sequence, Type
 
+import pandas as pd
 import pyspark
 import pyspark.sql
 from dagster import InputContext, MetadataValue, OutputContext, TableColumn, TableSchema
@@ -10,6 +11,7 @@ from dagster_duckdb.io_manager import (
     build_duckdb_io_manager,
 )
 from pyspark.sql import SparkSession
+from pyspark.sql.functions import date_format
 from pyspark.sql.types import StructType
 
 
@@ -49,7 +51,7 @@ class DuckDBPySparkTypeHandler(DbTypeHandler[pyspark.sql.DataFrame]):
         connection,
     ):
         """Stores the given object at the provided filepath."""
-        pd_df = obj.toPandas()  # noqa: F841
+        pd_df = _pyspark_df_to_pandas_df(obj)  # noqa: F841
         connection.execute(
             f"create table if not exists {table_slice.schema}.{table_slice.table} as select * from"
             " pd_df;"
@@ -211,3 +213,12 @@ class DuckDBPySparkIOManager(DuckDBIOManager):
     @staticmethod
     def default_load_type() -> Optional[Type]:
         return pyspark.sql.DataFrame
+
+
+# This is temporarily needed until pyspark supports converting timestamps properly to pandas 2.x.
+# See: https://stackoverflow.com/questions/76072664/convert-pyspark-dataframe-to-pandas-dataframe-fails-on-timestamp-column
+def _pyspark_df_to_pandas_df(df: pyspark.sql.DataFrame) -> pd.DataFrame:
+    for col, dtype in df.dtypes:
+        if dtype == "timestamp":
+            df = df.withColumn(col, date_format(col, "yyyy-MM-dd HH:mm:ss"))
+    return df.toPandas()
