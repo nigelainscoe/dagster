@@ -1,6 +1,6 @@
 import hashlib
 import textwrap
-from typing import AbstractSet, Any, Dict, FrozenSet, List, Mapping, Optional, Set, Tuple
+from typing import AbstractSet, Any, Dict, FrozenSet, List, Mapping, Optional, Sequence, Set, Tuple
 
 from dagster import (
     AssetKey,
@@ -230,7 +230,7 @@ def get_dbt_multi_asset_args(
     dbt_nodes: Mapping[str, Any],
     deps: Mapping[str, FrozenSet[str]],
     io_manager_key: Optional[str] = None,
-) -> Tuple[Set[AssetKey], Dict[str, AssetOut], Dict[str, Set[AssetKey]],]:
+) -> Tuple[Sequence[AssetKey], Dict[str, AssetOut], Dict[str, Set[AssetKey]],]:
     """Use the standard defaults for dbt to construct the arguments for a dbt multi asset."""
     non_argument_deps: Set[AssetKey] = set()
     outs: Dict[str, AssetOut] = {}
@@ -268,7 +268,7 @@ def get_dbt_multi_asset_args(
             if parent_unique_id not in deps:
                 non_argument_deps.add(parent_asset_key)
 
-    return non_argument_deps, outs, internal_asset_deps
+    return list(non_argument_deps), outs, internal_asset_deps
 
 
 def get_asset_deps(
