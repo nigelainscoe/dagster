@@ -1,4 +1,6 @@
 from abc import ABC, abstractmethod
+from contextlib import contextmanager
+from contextvars import ContextVar
 from typing import (
     AbstractSet,
     Any,
@@ -46,6 +48,8 @@ from dagster._utils.backcompat import deprecation_warning
 from dagster._utils.forked_pdb import ForkedPdb
 
 from .system import StepExecutionContext
+
+8
 
 
 class AbstractComputeExecutionContext(ABC):
@@ -734,9 +738,26 @@ class AssetExecutionContext(OpExecutionContext):
         return super().get_asset_provenance(asset_key)
 
 
-def build_execution_context(
+_current_context: ContextVar[Optional[OpExecutionContext]] = ContextVar(
+    "execution_context", default=None
+)
+
+
+@contextmanager
+def enter_execution_context(
     step_context: StepExecutionContext,
-) -> Union[OpExecutionContext, AssetExecutionContext]:
+) -> Iterator[Union[OpExecutionContext, AssetExecutionContext]]:
     if step_context.is_sda_step:
-        return AssetExecutionContext(step_context)
-    return OpExecutionContext(step_context)
+        ctx = AssetExecutionContext(step_context)
+    else:
+        ctx = OpExecutionContext(step_context)
+
+    token = _current_context.set(ctx)
+    try:
+        yield ctx
+    finally:
+        _current_context.reset(token)
+
+
+def get_execution_context():
+    return _current_context.get()
