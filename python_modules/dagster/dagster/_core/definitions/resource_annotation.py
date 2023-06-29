@@ -8,13 +8,13 @@ from dagster._core.definitions.resource_definition import ResourceDefinition
 
 
 def get_resource_args(fn) -> Sequence[Parameter]:
-    return [param for param in get_function_params(fn) if _is_resource_annotated(param)]
+    return [param for param in get_function_params(fn) if is_resource_annotated(param)]
 
 
 RESOURCE_PARAM_METADATA = "resource_param"
 
 
-def _is_resource_annotated(param: Parameter) -> bool:
+def is_resource_annotated(param: Parameter) -> bool:
     from dagster._config.pythonic_config import ConfigurableResourceFactory
 
     extends_resource_definition = False

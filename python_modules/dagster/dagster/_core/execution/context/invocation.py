@@ -16,7 +16,6 @@ import dagster._check as check
 from dagster._core.definitions.assets import AssetsDefinition
 from dagster._core.definitions.composition import PendingNodeInvocation
 from dagster._core.definitions.decorators.op_decorator import DecoratedOpFunction
-from dagster._core.definitions.dependency import Node, NodeHandle
 from dagster._core.definitions.events import (
     AssetMaterialization,
     AssetObservation,
@@ -59,13 +58,63 @@ from .system import StepExecutionContext, TypeCheckContext
 
 def _property_msg(prop_name: str, method_name: str) -> str:
     return (
-        f"The {prop_name} {method_name} is not set on the context when a solid is directly invoked."
+        f"The {prop_name} {method_name} is not available on the context when an op or asset is"
+        " directly invoked."
     )
 
 
-class UnboundOpExecutionContext(OpExecutionContext):
-    """The ``context`` object available as the first argument to a solid's compute function when
-    being invoked directly. Can also be used as a context manager.
+class DirectExecutionContext:
+    """Helper class for direct invocation context classes."""
+
+    @property
+    def dagster_run(self) -> DagsterRun:
+        raise DagsterInvalidPropertyError(_property_msg("pipeline_run", "property"))
+
+    @property
+    def step_launcher(self) -> Optional[StepLauncher]:
+        raise DagsterInvalidPropertyError(_property_msg("step_launcher", "property"))
+
+    @property
+    def run_id(self) -> str:
+        """str: Hard-coded value to indicate that we are directly invoking solid."""
+        return "EPHEMERAL"
+
+    @property
+    def run_config(self) -> dict:
+        raise DagsterInvalidPropertyError(_property_msg("run_config", "property"))
+
+    @property
+    def job_def(self) -> JobDefinition:
+        raise DagsterInvalidPropertyError(_property_msg("job_def", "property"))
+
+    @property
+    def op(self) -> JobDefinition:
+        raise DagsterInvalidPropertyError(_property_msg("op", "property"))
+
+    @property
+    def node_handle(self) -> JobDefinition:
+        raise DagsterInvalidPropertyError(_property_msg("node_handle", "property"))
+
+    @property
+    def job_name(self) -> str:
+        raise DagsterInvalidPropertyError(_property_msg("job_name", "property"))
+
+    def has_tag(self, key: str) -> bool:
+        raise DagsterInvalidPropertyError(_property_msg("has_tag", "method"))
+
+    def get_tag(self, key: str) -> str:
+        raise DagsterInvalidPropertyError(_property_msg("get_tag", "method"))
+
+    def get_step_execution_context(self) -> StepExecutionContext:
+        raise DagsterInvalidPropertyError(_property_msg("get_step_execution_context", "methods"))
+
+
+class UnboundOpExecutionContext(DirectExecutionContext, OpExecutionContext):
+    """A manually constructed execution context used for directly invoking ops.
+
+    A BoundOpExecutionContext created from this object is made available in the directly invoked op.
+
+    Limited information can be accessed from this object before and after execution of target ops.
     """
 
     def __init__(
@@ -76,7 +125,6 @@ class UnboundOpExecutionContext(OpExecutionContext):
         instance: Optional[DagsterInstance],
         partition_key: Optional[str],
         mapping_key: Optional[str],
-        assets_def: Optional[AssetsDefinition],
     ):
         from dagster._core.execution.api import ephemeral_instance_if_missing
         from dagster._core.execution.context_creation_job import initialize_console_manager
@@ -112,8 +160,6 @@ class UnboundOpExecutionContext(OpExecutionContext):
         self._user_events: List[UserEvent] = []
         self._output_metadata: Dict[str, Any] = {}
 
-        self._assets_def = check.opt_inst_param(assets_def, "assets_def", AssetsDefinition)
-
     def __enter__(self):
         self._cm_scope_entered = True
         return self
@@ -127,6 +173,18 @@ class UnboundOpExecutionContext(OpExecutionContext):
             self._resources_cm.__exit__(None, None, None)
         if not self._cm_scope_entered:
             self._instance_cm.__exit__(None, None, None)
+
+    @property
+    def op_def(self) -> OpDefinition:
+        raise DagsterInvalidPropertyError(
+            "op_def is not available on the context until it has been passed to an op/asset."
+        )
+
+    @property
+    def assets_def(self) -> AssetsDefinition:
+        raise DagsterInvalidPropertyError(
+            "assets_def is not available on the context until it has been passed to an asset."
+        )
 
     @property
     def op_config(self) -> Any:
@@ -145,10 +203,6 @@ class UnboundOpExecutionContext(OpExecutionContext):
                 "open a context manager: `with build_solid_context(...) as context:`"
             )
         return self._resources
-
-    @property
-    def dagster_run(self) -> DagsterRun:
-        raise DagsterInvalidPropertyError(_property_msg("pipeline_run", "property"))
 
     @property
     def instance(self) -> DagsterInstance:
@@ -172,46 +226,9 @@ class UnboundOpExecutionContext(OpExecutionContext):
         return self._pdb
 
     @property
-    def step_launcher(self) -> Optional[StepLauncher]:
-        raise DagsterInvalidPropertyError(_property_msg("step_launcher", "property"))
-
-    @property
-    def run_id(self) -> str:
-        """str: Hard-coded value to indicate that we are directly invoking solid."""
-        return "EPHEMERAL"
-
-    @property
-    def run_config(self) -> dict:
-        raise DagsterInvalidPropertyError(_property_msg("run_config", "property"))
-
-    @property
-    def job_def(self) -> JobDefinition:
-        raise DagsterInvalidPropertyError(_property_msg("job_def", "property"))
-
-    @property
-    def job_name(self) -> str:
-        raise DagsterInvalidPropertyError(_property_msg("job_name", "property"))
-
-    @property
     def log(self) -> DagsterLogManager:
         """DagsterLogManager: A console manager constructed for this context."""
         return self._log
-
-    @property
-    def node_handle(self) -> NodeHandle:
-        raise DagsterInvalidPropertyError(_property_msg("solid_handle", "property"))
-
-    @property
-    def solid(self) -> Node:
-        raise DagsterInvalidPropertyError(_property_msg("solid", "property"))
-
-    @property
-    def op_def(self) -> OpDefinition:
-        raise DagsterInvalidPropertyError(_property_msg("op_def", "property"))
-
-    @property
-    def assets_def(self) -> AssetsDefinition:
-        raise DagsterInvalidPropertyError(_property_msg("assets_def", "property"))
 
     @property
     def has_partition_key(self) -> bool:
@@ -226,53 +243,73 @@ class UnboundOpExecutionContext(OpExecutionContext):
     def asset_partition_key_for_output(self, output_name: str = "result") -> str:
         return self.partition_key
 
-    def has_tag(self, key: str) -> bool:
-        raise DagsterInvalidPropertyError(_property_msg("has_tag", "method"))
-
-    def get_tag(self, key: str) -> str:
-        raise DagsterInvalidPropertyError(_property_msg("get_tag", "method"))
-
-    def get_step_execution_context(self) -> StepExecutionContext:
-        raise DagsterInvalidPropertyError(_property_msg("get_step_execution_context", "methods"))
-
     def bind(
         self,
-        op_def_or_invocation: Union[OpDefinition, PendingNodeInvocation[OpDefinition]],
+        op_def: OpDefinition,
+        pending_invocation: Optional[PendingNodeInvocation[OpDefinition]],
+        assets_def: Optional[AssetsDefinition],
+        config_from_args: Optional[Mapping[str, Any]],
+        resources_from_args: Optional[Mapping[str, Any]],
     ) -> "BoundOpExecutionContext":
-        op_def = (
-            op_def_or_invocation
-            if isinstance(op_def_or_invocation, OpDefinition)
-            else op_def_or_invocation.node_def
-        )
-
-        _validate_resource_requirements(self._resource_defs, op_def)
-
         from dagster._core.definitions.resource_invocation import resolve_bound_config
 
-        op_config = resolve_bound_config(self.op_config, op_def)
+        if resources_from_args:
+            if self._resource_defs:
+                raise DagsterInvalidInvocationError(
+                    "Cannot provide resources in both context and kwargs"
+                )
+            resource_defs = wrap_resources_for_execution(resources_from_args)
+            # assumption: no context manager shenanigans can happen with resources passed by args
+            resources = build_resources(resource_defs, self.instance).__enter__()
+        elif assets_def and assets_def.resource_defs:
+            for key in sorted(list(assets_def.resource_defs.keys())):
+                if key in self._resource_defs:
+                    raise DagsterInvalidInvocationError(
+                        f"Error when invoking {str(assets_def)} resource '{key}' "
+                        "provided on both the definition and invocation context. Please "
+                        "provide on only one or the other."
+                    )
+            resource_defs = wrap_resources_for_execution(
+                {**self._resource_defs, **assets_def.resource_defs}
+            )
+            # how do we handle context manager scoping for these re-entered resources?
+            #  * error if there are any from either set?
+            #  * do some exit / re-enter stuff?
+            resources = build_resources(
+                resource_defs, self.instance, self._resources_config
+            ).__enter__()
+        else:
+            resources = self.resources
+            resource_defs = self._resource_defs
+
+        _validate_resource_requirements(resource_defs, op_def)
+
+        if self.op_config and config_from_args:
+            raise DagsterInvalidInvocationError("Cannot provide config in both context and kwargs")
+        op_config = resolve_bound_config(config_from_args or self.op_config, op_def)
 
         return BoundOpExecutionContext(
             op_def=op_def,
             op_config=op_config,
-            resources=self.resources,
+            resources=resources,
             resources_config=self._resources_config,
             instance=self.instance,
             log_manager=self.log,
             pdb=self.pdb,
-            tags=op_def_or_invocation.tags
-            if isinstance(op_def_or_invocation, PendingNodeInvocation)
+            tags=pending_invocation.tags
+            if isinstance(pending_invocation, PendingNodeInvocation)
             else None,
-            hook_defs=op_def_or_invocation.hook_defs
-            if isinstance(op_def_or_invocation, PendingNodeInvocation)
+            hook_defs=pending_invocation.hook_defs
+            if isinstance(pending_invocation, PendingNodeInvocation)
             else None,
-            alias=op_def_or_invocation.given_alias
-            if isinstance(op_def_or_invocation, PendingNodeInvocation)
+            alias=pending_invocation.given_alias
+            if isinstance(pending_invocation, PendingNodeInvocation)
             else None,
             user_events=self._user_events,
             output_metadata=self._output_metadata,
             mapping_key=self._mapping_key,
             partition_key=self._partition_key,
-            assets_def=self._assets_def,
+            assets_def=assets_def,
         )
 
     def get_events(self) -> Sequence[UserEvent]:
@@ -320,35 +357,6 @@ class UnboundOpExecutionContext(OpExecutionContext):
     def get_mapping_key(self) -> Optional[str]:
         return self._mapping_key
 
-    def replace_resources(self, resources_dict: Mapping[str, Any]) -> "UnboundOpExecutionContext":
-        """Replace the resources of this context.
-
-        This method is intended to be used by the Dagster framework, and should not be called by user code.
-
-        Args:
-            resources (Mapping[str, Any]): The resources to add to the context.
-        """
-        return UnboundOpExecutionContext(
-            op_config=self._op_config,
-            resources_dict=resources_dict,
-            resources_config=self._resources_config,
-            instance=self._instance,
-            partition_key=self._partition_key,
-            mapping_key=self._mapping_key,
-            assets_def=self._assets_def,
-        )
-
-    def replace_config(self, config: Mapping[str, Any]) -> "UnboundOpExecutionContext":
-        return UnboundOpExecutionContext(
-            op_config=config,
-            resources_dict=self._resource_defs,
-            resources_config=self._resources_config,
-            instance=self._instance,
-            partition_key=self._partition_key,
-            mapping_key=self._mapping_key,
-            assets_def=self._assets_def,
-        )
-
 
 def _validate_resource_requirements(
     resource_defs: Mapping[str, ResourceDefinition], op_def: OpDefinition
@@ -360,7 +368,7 @@ def _validate_resource_requirements(
                 ensure_requirements_satisfied(resource_defs, [requirement])
 
 
-class BoundOpExecutionContext(OpExecutionContext):
+class BoundOpExecutionContext(DirectExecutionContext, OpExecutionContext):
     """The op execution context that is passed to the compute function during invocation.
 
     This context is bound to a specific op definition, for which the resources and config have
@@ -428,10 +436,6 @@ class BoundOpExecutionContext(OpExecutionContext):
         return self._resources
 
     @property
-    def dagster_run(self) -> DagsterRun:
-        raise DagsterInvalidPropertyError(_property_msg("pipeline_run", "property"))
-
-    @property
     def instance(self) -> DagsterInstance:
         return self._instance
 
@@ -453,10 +457,6 @@ class BoundOpExecutionContext(OpExecutionContext):
         return self._pdb
 
     @property
-    def step_launcher(self) -> Optional[StepLauncher]:
-        raise DagsterInvalidPropertyError(_property_msg("step_launcher", "property"))
-
-    @property
     def run_id(self) -> str:
         """str: Hard-coded value to indicate that we are directly invoking solid."""
         return "EPHEMERAL"
@@ -470,25 +470,9 @@ class BoundOpExecutionContext(OpExecutionContext):
         return run_config
 
     @property
-    def job_def(self) -> JobDefinition:
-        raise DagsterInvalidPropertyError(_property_msg("job_def", "property"))
-
-    @property
-    def job_name(self) -> str:
-        raise DagsterInvalidPropertyError(_property_msg("job_name", "property"))
-
-    @property
     def log(self) -> DagsterLogManager:
         """DagsterLogManager: A console manager constructed for this context."""
         return self._log
-
-    @property
-    def node_handle(self) -> NodeHandle:
-        raise DagsterInvalidPropertyError(_property_msg("node_handle", "property"))
-
-    @property
-    def op(self) -> Node:
-        raise DagsterInvalidPropertyError(_property_msg("op", "property"))
 
     @property
     def op_def(self) -> OpDefinition:
@@ -511,9 +495,6 @@ class BoundOpExecutionContext(OpExecutionContext):
     @property
     def alias(self) -> str:
         return self._alias
-
-    def get_step_execution_context(self) -> StepExecutionContext:
-        raise DagsterInvalidPropertyError(_property_msg("get_step_execution_context", "methods"))
 
     def for_type(self, dagster_type: DagsterType) -> TypeCheckContext:
         resources = cast(NamedTuple, self.resources)
@@ -672,7 +653,6 @@ def build_op_context(
     config: Any = None,
     partition_key: Optional[str] = None,
     mapping_key: Optional[str] = None,
-    _assets_def: Optional[AssetsDefinition] = None,
 ) -> UnboundOpExecutionContext:
     """Builds op execution context from provided parameters.
 
@@ -690,8 +670,6 @@ def build_op_context(
         mapping_key (Optional[str]): A key representing the mapping key from an upstream dynamic
             output. Can be accessed using ``context.get_mapping_key()``.
         partition_key (Optional[str]): String value representing partition key to execute with.
-        _assets_def (Optional[AssetsDefinition]): Internal argument that populates the op's assets
-            definition, not meant to be populated by users.
 
     Examples:
         .. code-block:: python
@@ -718,5 +696,4 @@ def build_op_context(
         instance=check.opt_inst_param(instance, "instance", DagsterInstance),
         partition_key=check.opt_str_param(partition_key, "partition_key"),
         mapping_key=check.opt_str_param(mapping_key, "mapping_key"),
-        assets_def=check.opt_inst_param(_assets_def, "_assets_def", AssetsDefinition),
     )
