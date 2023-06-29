@@ -211,8 +211,20 @@ class AssetGraph:
         return self._asset_dep_graph["downstream"][asset_key]
 
     def get_parents(self, asset_key: AssetKey) -> AbstractSet[AssetKey]:
-        """Returns all assets that the given asset depends on."""
-        return self._asset_dep_graph["upstream"][asset_key]
+        """Returns all first-order dependencies of an asset."""
+        return self._asset_dep_graph["upstream"].get(asset_key) or set()
+
+    def get_ancestors(self, asset_key: AssetKey) -> AbstractSet[AssetKey]:
+        """Returns all nth-order dependencies of an asset."""
+        parents = self.get_parents(asset_key)
+        if len(parents) == 0:
+            return parents
+        else:
+            ancestors: Set[AssetKey] = set()
+            for parent in parents:
+                ancestors.add(parent)
+                ancestors.update(self.get_ancestors(parent))
+            return ancestors
 
     def get_children_partitions(
         self,
