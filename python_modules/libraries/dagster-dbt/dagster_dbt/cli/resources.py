@@ -2,7 +2,7 @@ from typing import Any, Iterator, Mapping, Optional, Sequence, Set
 
 import dagster._check as check
 from dagster import resource
-from dagster._annotations import public
+from dagster._annotations import deprecated, public
 from dagster._config.pythonic_config import ConfigurableResource, IAttachDifferentObjectToOpContext
 from dagster._core.definitions.resource_definition import dagster_maintained_resource
 from dagster._utils.merger import merge_dicts
@@ -468,7 +468,11 @@ class DbtCliClient(DbtClient):
         return parse_manifest(project_dir, target_path)
 
 
+@deprecated
 class DbtCliResource(DbtCliClient):
+    """Deprecated. Use `DbtCli` instead.
+    """
+
     pass
 
 
