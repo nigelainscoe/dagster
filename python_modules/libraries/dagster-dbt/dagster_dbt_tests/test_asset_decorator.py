@@ -1,3 +1,4 @@
+import re
 from typing import AbstractSet, Any, Mapping, Optional
 
 import pytest
@@ -282,11 +283,14 @@ def test_dbt_with_downstream_asset_errors():
 
     with pytest.raises(
         DagsterInvalidDefinitionError,
-        match=(
-            "Cannot pass a multi_asset AssetsDefinition as an argument to deps."
-            " Instead, specify dependencies on the assets created by the multi_asset via AssetKeys"
-            " or strings."
-            " For the multi_asset my_dbt_assets, the available keys are: "
+        match=re.escape(
+            "Cannot pass a multi_asset AssetsDefinition as an argument to deps. Instead, specify"
+            " dependencies on the assets created by the multi_asset via AssetKeys or strings. For"
+            " the multi_asset my_dbt_assets, the available keys are: {AssetKey(['raw_payments']),"
+            " AssetKey(['raw_customers']), AssetKey(['customized', 'staging', 'payments']),"
+            " AssetKey(['customized', 'staging', 'orders']), AssetKey(['raw_orders']),"
+            " AssetKey(['orders']), AssetKey(['customers']), AssetKey(['customized', 'staging',"
+            " 'customers'])}."
         ),
     ):
 
